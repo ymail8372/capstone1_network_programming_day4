@@ -70,71 +70,81 @@ void insert_search_term_trie(char* search_term, int search_frequency) {
 		if (i == search_term_size - 1) {
 			current_node->children_trie_node[index]->search_term_frequency = search_frequency;
 		}
+		else {
+			current_node->children_trie_node[index]->search_term_frequency = 0;
+		}
 		
 		// cerrent_node update
 		current_node = current_node->children_trie_node[index];
 	}
 }
 
-// prefix가 가리키는 node 찾기
-struct trie_node* get_prefix_trie_node(char* prefix) {
-	size_t prefix_len = strlen(prefix);
-	struct trie_node* current_node = &root;
+/*
+// word가 가리키는 node 찾기
+//struct trie_node* get_word_trie_node(char* word) {
+//	size_t word_len = strlen(word);
+//	struct trie_node* current_node = &root;
 	
-	for (int i = 0; i < prefix_len; i ++) {
+//	for (int i = 0; i < word_len; i ++) {
 		
-		// trie에서 찾을 target_char 선언
-		char target_char = prefix[i];
+//		// trie에서 찾을 target_char 선언
+//		char target_char = word[i];
 		
-		// 대문자일 경우 소문자로 만들기
-		target_char = tolower(target_char);
+//		// 대문자일 경우 소문자로 만들기
+//		target_char = tolower(target_char);
 		
-		// target_char이 들어간 children_trie의 index 선언
-		unsigned short index = 0;
+//		// target_char이 들어간 children_trie의 index 선언
+//		unsigned short index = 0;
 		
-		// target_char이 알파벳인 경우
-		if (target_char >= 'a' && target_char <= 'z') {
-			index = target_char - 'a';
-		}
-		// target_char이 SP(' ')인 경우
-		else if (target_char == ' ') {
-			index = 36;
-		}
-		// target_char이 숫자일 경우
-		else {
-			index = target_char - '0' + 26;
-		}
+//		// target_char이 알파벳인 경우
+//		if (target_char >= 'a' && target_char <= 'z') {
+//			index = target_char - 'a';
+//		}
+//		// target_char이 SP(' ')인 경우
+//		else if (target_char == ' ') {
+//			index = 36;
+//		}
+//		// target_char이 숫자일 경우
+//		else {
+//			index = target_char - '0' + 26;
+//		}
 		
-		// prefix가 가리키는 trie_node가 존재하지 않는 경우
-		if (current_node->children_trie_node[index] == NULL) {
-			//printf("prefix가 가리키는 trie_node가 존재하지 않습니다.");
+//		// word가 가리키는 trie_node가 존재하지 않는 경우
+//		if (current_node->children_trie_node[index] == NULL) {
+//			//printf("word가 가리키는 trie_node가 존재하지 않습니다.");
 			
-			return NULL;
-		}
+//			return NULL;
+//		}
 		
-		// current_node update
-		current_node = current_node->children_trie_node[index];
-	}
+//		// current_node update
+//		current_node = current_node->children_trie_node[index];
+//	}
 	
-	return current_node;
-}
+//	return current_node;
+//}
+*/
 
 // 재귀적으로 하위 node를 찾아 하위 node가 leaf node일 경우 하위 node로 이동, 현재 node가 file에 등록된 search_term인 경우 search_term_list에 추가
-void print_search_term_of_prefix_node(struct trie_node* node, char* search_term, struct search_term_struct search_term_list[LIST_SIZE], int* list_count) {
+void save_search_term_including_word_node(struct trie_node* node, char* search_term, char* word, struct search_term_struct search_term_list[LIST_SIZE], int* list_count) {
 	
-	char search_term_added[BUFFER_SIZE] = "";
-	strcpy(search_term_added, search_term);
-	
-	//  현재 node가 file에 등록된 search_term인 경우 list_count, search_term_list update
-	if (node->search_term_frequency != 0) {
+	// 현재 node가 file에 등록된 search_term인 경우 + word가 빈 문자열이 아닌 경우
+	if (node->search_term_frequency != 0 && strlen(word) != 0) {
 		
-		strcpy(search_term_list[*list_count].search_term, search_term);
-		search_term_list[*list_count].search_term_frequency = node->search_term_frequency;
-		*list_count = *list_count + 1;
-	
-		//printf("find search_term : %s\n", search_term_added);
+		//printf("search_term : %s\n", search_term);
+		
+		// 현재 node가 word를 포함하고 있을 경우
+		if (strstr(search_term, word) != NULL) {
+			
+			// list_count 업데이트, search_term_list에 search_term 저장
+			strcpy(search_term_list[*list_count].search_term, search_term);
+			search_term_list[*list_count].search_term_frequency = node->search_term_frequency;
+			*list_count = *list_count + 1;
+		
+			//printf("find search_term : %s\n", search_term);
+		}
 	}
 	
+	char search_term_added[BUFFER_SIZE] = "";
 	// 하위 node 탐색
 	for (int i = 0; i < ASCII; i ++) {
 		
@@ -166,7 +176,7 @@ void print_search_term_of_prefix_node(struct trie_node* node, char* search_term,
 			
 			strcat(search_term_added, add_str);
 			
-			print_search_term_of_prefix_node(node->children_trie_node[i], search_term_added, search_term_list, list_count);
+			save_search_term_including_word_node(node->children_trie_node[i], search_term_added, word, search_term_list, list_count);
 		}
 	}
 }
@@ -211,37 +221,39 @@ void send_search_term_list_to_client(struct search_term_struct search_term_list[
 	}
 }
 
+// quick_sort에서 사용되는 swap 함수
 void swap(struct search_term_struct* a, struct search_term_struct* b) {
-    struct search_term_struct temp = *a;
-    *a = *b;
-    *b = temp;
+	struct search_term_struct temp = *a;
+	*a = *b;
+	*b = temp;
 }
 
+// search_term_list 정렬
 void quick_sort(struct search_term_struct search_term_list[LIST_SIZE], int start, int end) {
 	if (start >= end) {
 		return;
 	}
 	
-    int key = start, i = start + 1, j = end, temp;
+	int key = start, i = start + 1, j = end, temp;
 	
-    while (i <= j) {
-        while (i <= end && search_term_list[i].search_term_frequency >= search_term_list[key].search_term_frequency) {
+	while (i <= j) {
+		while (i <= end && search_term_list[i].search_term_frequency >= search_term_list[key].search_term_frequency) {
 			i++;
 		}
-        while (j > start && search_term_list[j].search_term_frequency <= search_term_list[key].search_term_frequency) {
+		while (j > start && search_term_list[j].search_term_frequency <= search_term_list[key].search_term_frequency) {
 			j--;
 		}
-        
-        if (i > j) {
+		
+		if (i > j) {
 			swap(&search_term_list[key], &search_term_list[j]);
 		}
-        else {
+		else {
 			swap(&search_term_list[i], &search_term_list[j]);
 		}
-    }
-    
-    quick_sort(search_term_list, start, j - 1);
-    quick_sort(search_term_list, j + 1, end); 
+	}
+	
+	quick_sort(search_term_list, start, j - 1);
+	quick_sort(search_term_list, j + 1, end); 
 }
 
 // thread_handler
@@ -252,44 +264,44 @@ void* thread_handler(void* arg) {
 	
 	struct search_term_struct search_term_list[LIST_SIZE];
 	int list_count = 0;
-	char prefix[BUFFER_SIZE] = "";
+	char word[BUFFER_SIZE] = "";
 	
 	while (true) {
-		size_t prefix_size = 0, received_byte = 0, read_byte = 0;
+		size_t word_size = 0, received_byte = 0, read_byte = 0;
 		
-		// client로부터 prefix 크기 받기
-		read_byte = read(client_sock, &prefix_size, sizeof(prefix_size));
+		// client로부터 word 크기 받기
+		read_byte = read(client_sock, &word_size, sizeof(word_size));
 		if (read_byte == 0) {
 			printf("socket %d closed\n", client_sock);
 			pthread_exit(NULL);
 		}
 		
-		// prefix 초기화
+		// word 초기화
 		for (int i = 0; i < BUFFER_SIZE; i ++) {
-			prefix[i] = 0;
+			word[i] = 0;
 		}
 		
-		// client로부터 prefix 받기
-		while(received_byte < prefix_size && prefix_size != 0) {
+		// client로부터 word 받기
+		while(received_byte < word_size && word_size != 0) {
 		
-			// client로부터 prefix 받기
-			read_byte = read(client_sock, prefix, prefix_size);
+			// client로부터 word 받기
+			read_byte = read(client_sock, word, word_size);
 			if (read_byte == 0) {
 				printf("socket %d closed\n", client_sock);
 				pthread_exit(NULL);
 			}
 			received_byte += read_byte;
 		}
-		printf("prefix : %s\n", prefix);
+		//printf("word : %s\n", word);
 		
-		// prefix가 존재하는 node 받기
-		struct trie_node* thread_handler_trie_node = get_prefix_trie_node(prefix);
+		//// word가 존재하는 node 받기
+		//struct trie_node* thread_handler_trie_node = get_word_trie_node(word);
 		
-		// prefix가 존재하는 node가 없으면 continue
-		if (thread_handler_trie_node == NULL) {
-			send_search_term_list_to_client(NULL, 0, client_sock);
-			continue;
-		}
+		//// word가 존재하는 node가 없으면 continue
+		//if (thread_handler_trie_node == NULL) {
+		//	send_search_term_list_to_client(NULL, 0, client_sock);
+		//	continue;
+		//}
 		
 		// search_term_list, list_count 초기화
 		list_count = 0;
@@ -301,25 +313,25 @@ void* thread_handler(void* arg) {
 		}
 		
 		// search_term_list에 search_term 받기
-		print_search_term_of_prefix_node(thread_handler_trie_node, prefix, search_term_list, &list_count);
+		save_search_term_including_word_node(&root, "", word, search_term_list, &list_count);
 		
-		printf("list_count : %d\n", list_count);
+		//printf("list_count : %d\n", list_count);
 		
 		// search_term_list를 search_term_frequency를 기준으로 정렬
 		quick_sort(search_term_list, 0, list_count);
 		
 		// search_term_list의 요소가 10개 미만일 경우
 		if (list_count < 10) {
-			for (int i = 0; i < list_count; i ++) {
-				printf("[%d] %s\n", i, search_term_list[i].search_term);
-			}
+			//for (int i = 0; i < list_count; i ++) {
+			//	printf("[%d] %s\n", i, search_term_list[i].search_term);
+			//}
 			send_search_term_list_to_client(search_term_list, list_count, client_sock);
 		}
 		// search_term_list의 요소가 10개 이상일 경우 10개만 출력
 		else {
-			for (int i = 0; i < 10; i ++) {
-				printf("[%d] %s\n", i, search_term_list[i].search_term);
-			}
+			//for (int i = 0; i < 10; i ++) {
+			//	printf("[%d] %s\n", i, search_term_list[i].search_term);
+			//}
 			send_search_term_list_to_client(search_term_list, 10, client_sock);
 		}
 	}
