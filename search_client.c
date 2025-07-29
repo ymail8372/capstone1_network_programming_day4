@@ -91,7 +91,6 @@ int main(int argc, char* argv[]) {
 				
 				// server로부터 list_count 수신
 				read(sock, &list_count, sizeof(list_count));
-				//printf("list_count : %d\n", list_count);
 				
 				// server로부터 search_term 수신
 				for (int i = 0; i < list_count; i ++) {
@@ -99,7 +98,6 @@ int main(int argc, char* argv[]) {
 					
 					// search_term의 크기 수신
 					read(sock, &total_size, sizeof(total_size));
-					//printf("total_size : %ld\n", total_size);
 					
 					// search_term 수신
 					while (received_byte < total_size) {
